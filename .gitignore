@@ -1,0 +1,11 @@
+# Editor / OS noise
+*.swp
+*~
+.DS_Store
+
+# Stray backups from earlier setups
+*.bak
+*.orig
+
+# nvim lockfile is intentionally NOT ignored — it pins plugin versions,
+# which is what makes the editor config reproducible.

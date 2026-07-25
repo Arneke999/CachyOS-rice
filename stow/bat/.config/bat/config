@@ -1,0 +1,6 @@
+# bat config. "base16" renders via the terminal's 16 ANSI colours, so bat stays
+# consistent with kitty/alacritty automatically — and since this rice uses the
+# official Catppuccin Mocha ANSI palette, that IS Catppuccin. No .tmTheme or
+# `bat cache --build` needed.
+--theme="base16"
+--style="numbers,changes,header"
