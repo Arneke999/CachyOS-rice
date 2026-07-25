@@ -33,7 +33,12 @@ fi
 
 if command -v papirus-folders >/dev/null 2>&1; then
   say "tinting Papirus folders pink"
-  papirus-folders -C cat-mocha-pink --theme Papirus-Dark >/dev/null
+  # Papirus lives in /usr/share/icons, so this needs root. Non-fatal: pink
+  # folders are cosmetic and the rest of the theme must still apply.
+  if ! papirus-folders -C cat-mocha-pink --theme Papirus-Dark >/dev/null 2>&1; then
+    echo "   needs root — run separately if you want pink folders:"
+    echo "     sudo papirus-folders -C cat-mocha-pink --theme Papirus-Dark"
+  fi
 fi
 
 # ── Fonts — Inter for UI, JetBrainsMono NF for fixed. Same as the lain rice. ─
@@ -57,26 +62,59 @@ kwriteconfig6 --file kwinrc --group Plugins --key contrastEnabled false
 kwriteconfig6 --file kdeglobals --group KDE --key AnimationDurationFactor 0.75
 
 # ── Window decoration ───────────────────────────────────────────────────────
-if [ -d /usr/share/kwin/decorations/org.kde.klassy ] \
-   || [ -d ~/.local/share/kwin/decorations/org.kde.klassy ]; then
-  say "using Klassy decoration (rounded corners)"
-  kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key library org.kde.klassy
-  kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key theme Klassy
+# Klassy ships as a KDecoration plugin, not a directory under
+# /usr/share/kwin/decorations. Plasma 6.7 uses the kdecoration3 ABI; older
+# releases used kdecoration2, so detect which is present rather than guessing.
+KLASSY_SO=""
+for d in /usr/lib/qt6/plugins/org.kde.kdecoration3 \
+         /usr/lib/qt6/plugins/org.kde.kdecoration2 \
+         "$HOME/.local/lib/qt6/plugins/org.kde.kdecoration3"; do
+  if [ -f "$d/org.kde.klassy.so" ]; then
+    KLASSY_SO="$d"
+    break
+  fi
+done
+
+if [ -n "$KLASSY_SO" ]; then
+  # Group name must match the ABI version the plugin was built against.
+  case "$KLASSY_SO" in
+    *kdecoration3*) DECO_GROUP="org.kde.kdecoration3" ;;
+    *)              DECO_GROUP="org.kde.kdecoration2" ;;
+  esac
+  say "using Klassy decoration (rounded corners) via $DECO_GROUP"
+  kwriteconfig6 --file kwinrc --group "$DECO_GROUP" --key library org.kde.klassy
+  kwriteconfig6 --file kwinrc --group "$DECO_GROUP" --key theme Klassy
+  # Corner radius 8, matching the rice's `rounding = 8`.
+  kwriteconfig6 --file klassyrc --group Common --key CornerRadius 8
 else
   echo "   klassy not installed — keeping current decoration"
   echo "   (install with: yay -S klassy, then re-run this script for rounded corners)"
 fi
 
 # ── Kvantum (Qt widget style) ───────────────────────────────────────────────
+# NB: `kvantummanager --set` returns 0 and pops open its GUI when handed a theme
+# name that doesn't exist, so it can't be used to probe for a theme. Check the
+# theme directory first, then write kvantum.kvconfig directly — no GUI, no guessing.
 if command -v kvantummanager >/dev/null 2>&1; then
-  for t in Catppuccin-Mocha-Pink Catppuccin-Mocha catppuccin-mocha-pink; do
-    if kvantummanager --set "$t" >/dev/null 2>&1; then
-      say "Kvantum theme set to $t"
-      mkdir -p ~/.config/environment.d
-      echo 'QT_STYLE_OVERRIDE=kvantum' > ~/.config/environment.d/kvantum.conf
+  KV_THEME=""
+  for t in catppuccin-mocha-pink Catppuccin-Mocha-Pink; do
+    if [ -d "/usr/share/Kvantum/$t" ] || [ -d "$HOME/.config/Kvantum/$t" ]; then
+      KV_THEME="$t"
       break
     fi
   done
+  if [ -n "$KV_THEME" ]; then
+    say "setting Kvantum theme to $KV_THEME"
+    mkdir -p ~/.config/Kvantum
+    printf '[General]\ntheme=%s\n' "$KV_THEME" > ~/.config/Kvantum/kvantum.kvconfig
+    mkdir -p ~/.config/environment.d
+    echo 'QT_STYLE_OVERRIDE=kvantum' > ~/.config/environment.d/kvantum.conf
+  else
+    warn_kv="   no catppuccin Kvantum theme found — skipping"
+    echo "$warn_kv"
+    # Don't leave QT_STYLE_OVERRIDE pointing at an unconfigured Kvantum.
+    rm -f ~/.config/environment.d/kvantum.conf
+  fi
 fi
 
 # ── Wallpaper ───────────────────────────────────────────────────────────────
