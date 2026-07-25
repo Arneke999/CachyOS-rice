@@ -3,6 +3,12 @@
 # the rice on top.
 source /usr/share/cachyos-fish-config/cachyos-config.fish
 
+# The CachyOS config defines fish_greeting to run fastfetch on every new shell.
+# Override it with an empty function so terminals open clean. Run `fastfetch`
+# by hand when you actually want it.
+function fish_greeting
+end
+
 # Starship replaces the CachyOS prompt. Must come after the source above.
 if status is-interactive
     starship init fish | source
