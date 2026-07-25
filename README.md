@@ -27,7 +27,9 @@ to `~/.config-backup-<timestamp>/` rather than overwriting them.
 1. **Packages** — pacman + AUR (`yay`). Fonts, Kvantum, Papirus, Catppuccin
    colour scheme / cursors / Kvantum theme, Klassy decorations.
 2. **Dotfiles** — GNU stow symlinks everything in `stow/` into `~`.
-3. **KDE** — `kde/apply-kde.sh` sets the colour scheme, cursor, icons, fonts,
+3. **Services** — `scripts/enable-services.sh` enables the background session
+   services (EasyEffects, OpenRGB). See [Background services](#background-services).
+4. **KDE** — `kde/apply-kde.sh` sets the colour scheme, cursor, icons, fonts,
    and the flat/no-blur rule via `kwriteconfig6` and `plasma-apply-*`.
 
 ## Layout
@@ -39,13 +41,60 @@ stow/                   each dir is a stow package, symlinked into ~
   fish/ starship/       shell + prompt
   nvim/                 neovim (lazy.nvim, catppuccin)
   fastfetch/ bat/ gtk/
+  systemd/              user units for background services
 kde/
   colors/               Plasma colour scheme
   konsole/              Konsole colour scheme + profile
   apply-kde.sh          idempotent Plasma theming
+scripts/
+  enable-services.sh    enables the systemd user units
 docs/palette.md         every hex used, single source of truth
 wallpapers/
 ```
+
+## Background services
+
+EasyEffects and OpenRGB start with the desktop as **systemd user units**
+(`stow/systemd/.config/systemd/user/`), not `~/.config/autostart/*.desktop`.
+Plasma 6 here is systemd-managed, so `graphical-session.target` is a real
+ordering point — which `.desktop` autostart has no way to express, and
+EasyEffects genuinely needs to start after PipeWire.
+
+| Unit | Runs | Config it loads |
+|---|---|---|
+| `easyeffects.service` | `easyeffects --service-mode` (no window) | `~/.config/easyeffects/db/` — read automatically |
+| `openrgb.service` | `openrgb --startminimized --profile main` | `~/.config/OpenRGB/main.orp` |
+
+Both are `PartOf=graphical-session.target`, so they stop on logout rather than
+lingering.
+
+```sh
+bash scripts/enable-services.sh     # enable + (re)start, idempotent
+systemctl --user status openrgb.service
+journalctl --user -u openrgb.service -f
+systemctl --user disable --now easyeffects.service   # opt out
+```
+
+Things worth knowing:
+
+- **OpenRGB takes ~10s** to log `Profile loaded successfully` — hardware
+  detection runs first. That's normal, not a hang.
+- **Don't also use OpenRGB's built-in autostart** (`openrgb
+  --autostart-enable`). Two mechanisms means two instances fighting over the
+  same USB/SMBus controllers; `enable-services.sh` turns it off if it finds it.
+- The packaged **system-wide** `openrgb.service` is a different thing — it runs
+  `--server` as root against `/etc/openrgb` and never sees your profile. Leave
+  it disabled.
+- OpenRGB is a **Qt5** app and there is no Qt5 Wayland platform plugin here, so
+  the unit pins `QT_QPA_PLATFORM=xcb` and clears the qt6-only Kvantum style
+  override. Without those it still works, but logs two errors per start.
+- SMBus/i2c access needs no root: the packaged udev rules tag `/dev/i2c-*` with
+  `uaccess`, so the seat's active user gets an ACL. Running in the *user*
+  session is what makes that apply.
+- `mkdir -p ~/.config/systemd/user` before stowing — otherwise stow folds the
+  tree, symlinks the whole directory into this repo, and `systemctl --user
+  enable` writes its `.wants/` symlinks inside your git checkout. `install.sh`
+  does this for you.
 
 ## Why KDE configs aren't stowed
 

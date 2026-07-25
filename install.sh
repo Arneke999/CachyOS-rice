@@ -3,7 +3,8 @@
 # Bootstraps the CachyOS rice on a fresh machine:
 #   1. install packages (pacman + AUR via yay)
 #   2. symlink dotfiles with GNU stow
-#   3. apply the KDE Plasma theme
+#   3. enable the background session services
+#   4. apply the KDE Plasma theme
 #
 # Safe to re-run. Existing conflicting configs are backed up, not clobbered.
 set -euo pipefail
@@ -29,6 +30,8 @@ PACMAN_PKGS=(
   eza
   kitty
   konsole
+  easyeffects              # audio effect chains, run headless as a user service
+  openrgb                  # RGB lighting, run minimised as a user service
 )
 
 AUR_PKGS=(
@@ -74,12 +77,21 @@ do
 done
 
 say "symlinking dotfiles with stow"
+# Create this one first. If ~/.config/systemd doesn't exist, stow "folds" the
+# tree and symlinks the whole directory into the repo — then `systemctl --user
+# enable` would write its .wants/ symlinks inside the git checkout. With the
+# real directory already there, stow only links the individual unit files.
+mkdir -p "$HOME/.config/systemd/user"
 cd "$REPO/stow"
 for pkg in */; do
   stow -t "$HOME" -R "${pkg%/}"
   echo "   stowed ${pkg%/}"
 done
 cd "$REPO"
+
+# ── Background session services ─────────────────────────────────────────────
+say "enabling background services (EasyEffects, OpenRGB)"
+bash "$REPO/scripts/enable-services.sh"
 
 # ── KDE ─────────────────────────────────────────────────────────────────────
 say "applying the KDE Plasma theme"

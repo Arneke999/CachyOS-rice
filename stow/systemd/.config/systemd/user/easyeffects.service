@@ -1,0 +1,20 @@
+[Unit]
+# EasyEffects in service mode: applies the saved effect chains to PipeWire
+# without opening a window. Settings live in ~/.config/easyeffects/db/ and are
+# read on start, so there is nothing to pass on the command line.
+Description=EasyEffects audio effects (service mode)
+Documentation=https://github.com/wwmm/easyeffects
+After=graphical-session.target pipewire.service pipewire-pulse.service
+Wants=pipewire.service pipewire-pulse.service
+# Stop together with the desktop session instead of lingering after logout.
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/easyeffects --service-mode
+Restart=on-failure
+RestartSec=5
+Slice=session.slice
+
+[Install]
+WantedBy=graphical-session.target

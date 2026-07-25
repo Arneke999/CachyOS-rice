@@ -1,0 +1,30 @@
+[Unit]
+# OpenRGB minimised to the tray, loading the saved lighting profile.
+#
+# NB: this deliberately does NOT use the packaged system-wide openrgb.service.
+# That one runs `--server --config /etc/openrgb` as root and would never see
+# ~/.config/OpenRGB/main.orp. Running in the user session also means the seat's
+# uaccess ACL on /dev/i2c-* is already granted, so SMBus controllers (the
+# Gigabyte RGB Fusion 2 board here) are reachable without root.
+Description=OpenRGB - apply saved lighting profile
+Documentation=https://openrgb.org
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+# OpenRGB is a Qt5 app and there is no Qt5 Wayland platform plugin installed
+# (only qt6 ships libqwayland.so). Inheriting QT_QPA_PLATFORM=wayland from the
+# session makes it log a failure and fall back; ask for XWayland up front.
+Environment=QT_QPA_PLATFORM=xcb
+# Likewise, the Kvantum style is qt6-only — a Qt5 app just warns and ignores it.
+UnsetEnvironment=QT_STYLE_OVERRIDE
+# `--profile main` resolves to ~/.config/OpenRGB/main.orp.
+# `--noautoconnect` skips the pointless probe for an SDK server on startup.
+ExecStart=/usr/bin/openrgb --startminimized --noautoconnect --profile main
+Restart=on-failure
+RestartSec=5
+Slice=session.slice
+
+[Install]
+WantedBy=graphical-session.target
