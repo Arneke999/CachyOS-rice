@@ -127,6 +127,11 @@ else
   echo "   no wallpaper in $REPO/wallpapers — skipping"
 fi
 
+# ── Animated lock screen ────────────────────────────────────────────────────
+# No-ops cleanly if the plugin isn't installed or there's no video to play.
+say "configuring the lock screen"
+bash "$REPO/kde/apply-lockscreen.sh"
+
 # ── Reload ──────────────────────────────────────────────────────────────────
 say "reloading KWin"
 if command -v qdbus6 >/dev/null 2>&1; then

@@ -40,6 +40,7 @@ AUR_PKGS=(
   catppuccin-cursors-mocha
   papirus-folders-catppuccin-git
   klassy                    # rounded window decorations
+  plasma6-wallpapers-smart-video-wallpaper-reborn   # animated lock screen
 )
 
 say "installing packages from the official repos"

@@ -46,11 +46,59 @@ kde/
   colors/               Plasma colour scheme
   konsole/              Konsole colour scheme + profile
   apply-kde.sh          idempotent Plasma theming
+  apply-lockscreen.sh   animated (video) lock screen
 scripts/
   enable-services.sh    enables the systemd user units
 docs/palette.md         every hex used, single source of truth
 wallpapers/
+  video/                lock screen loops
 ```
+
+## Animated lock screen
+
+Nothing stock animates — every Plasma wallpaper plugin that ships with the
+desktop (`org.kde.image`, `slideshow`, `potd`, `color`, `tiled`) is a still
+image. The animated lock screens you see are a third-party wallpaper plugin,
+**Smart Video Wallpaper Reborn**, which is the one that supports the lock
+screen greeter and not just the desktop.
+
+```sh
+yay -S plasma6-wallpapers-smart-video-wallpaper-reborn
+# drop a looping video in wallpapers/video/  (see the README there)
+kde/apply-lockscreen.sh
+loginctl lock-session          # test it
+```
+
+`apply-kde.sh` runs it too, and it no-ops cleanly when the plugin is missing or
+there's no video, so nothing breaks on a machine that hasn't installed it.
+
+The settings it writes to `kscreenlockerrc`, and why:
+
+| Key | Value | Reason |
+|---|---|---|
+| `FillMode` | `2` PreserveAspectCrop | Fills the screen; letterboxing looks broken |
+| `MuteMode` | `5` Always | The greeter has no volume control — unmuted audio can't be stopped without logging in |
+| `PauseMode` | `3` Never | Other modes pause on maximized/active windows, meaningless on a lock screen |
+| `ScreenOffPausesVideo` | `true` | Stop decoding once the monitor sleeps |
+| `BackgroundColor` | `#1e1e2e` | Mocha base, shown before the first frame decodes |
+
+Caveats:
+
+- **Have the escape hatch ready before you need it.** A misbehaving video
+  plugin means staring at a broken lock screen. `kde/apply-lockscreen.sh
+  --reset` puts the stock image plugin back; it's much nicer to run that than
+  to edit `kscreenlockerrc` blind from a TTY.
+- The script **refuses to write anything** if the plugin isn't installed, since
+  pointing the greeter at a missing plugin gives you a black screen with no
+  wallpaper controls.
+- Upstream reports Qt crashes on **AMD** GPUs ([QTBUG-124586]); switching the
+  Qt media backend to GStreamer is the workaround. Not an issue on the NVIDIA
+  card here.
+- A video wallpaper decodes continuously. `ScreenOffPausesVideo` covers the
+  idle case, but this is a desktop-shaped tradeoff — think twice on a laptop
+  (the plugin has battery-threshold options for that).
+
+[QTBUG-124586]: https://bugreports.qt.io/browse/QTBUG-124586
 
 ## Background services
 
