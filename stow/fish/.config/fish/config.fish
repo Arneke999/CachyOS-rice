@@ -50,3 +50,8 @@ end
 if type -q bat
     alias cat 'bat'
 end
+
+# ── Local user scripts ────────────────────────────────────────────────────────
+if test -d ~/.local/bin
+    fish_add_path ~/.local/bin
+end
