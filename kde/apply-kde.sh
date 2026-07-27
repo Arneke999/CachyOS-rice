@@ -11,6 +11,14 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 say() { printf '\033[38;2;245;194;231m::\033[0m %s\n' "$*"; }
 
+# ── Desktop wallpaper ───────────────────────────────────────────────────────
+# A filename in wallpapers/. Change this to change the desktop.
+#
+# Pinned by name deliberately. This used to pick the first file alphabetically,
+# which meant dropping any new image into wallpapers/ silently reassigned the
+# desktop — "Abbachio.png" alone was enough to displace the whole lain set.
+WALLPAPER="kita.png"
+
 # ── Install the colour scheme & Konsole assets from the repo ─────────────────
 say "installing colour scheme and Konsole assets"
 mkdir -p ~/.local/share/color-schemes ~/.local/share/konsole
@@ -155,13 +163,19 @@ EOF
 done
 
 # ── Wallpaper ───────────────────────────────────────────────────────────────
-WALL=$(find "$REPO/wallpapers" -maxdepth 1 -type f \
-        \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) 2>/dev/null | sort | head -1)
-if [ -n "${WALL:-}" ]; then
-  say "setting wallpaper: $(basename "$WALL")"
+WALL="$REPO/wallpapers/$WALLPAPER"
+if [ -f "$WALL" ]; then
+  say "setting wallpaper: $WALLPAPER"
   plasma-apply-wallpaperimage "$WALL" || echo "   (wallpaper failed; set it manually)"
 else
-  echo "   no wallpaper in $REPO/wallpapers — skipping"
+  # Skip rather than fall back to "some other image" — silently picking a
+  # different wallpaper than the one named is exactly the behaviour this
+  # replaced.
+  echo "   wallpaper '$WALLPAPER' not found in $REPO/wallpapers — skipping"
+  echo "   available:"
+  find "$REPO/wallpapers" -maxdepth 1 -type f \
+    \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) \
+    -printf '     %f\n' 2>/dev/null | sort
 fi
 
 # ── Animated lock screen ────────────────────────────────────────────────────
