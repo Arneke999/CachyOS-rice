@@ -1,4 +1,4 @@
-# cachyos-rice
+# CachyOS-rice
 
 Catppuccin Mocha / Pink for CachyOS + KDE Plasma 6.
 
@@ -11,7 +11,7 @@ shell, editor and typography, restyled from that rice's wallpaper-driven
 ## Install
 
 ```bash
-git clone https://github.com/Arneke999/cachyos-rice.git ~/Projects/cachyos-rice
+git clone https://github.com/Arneke999/CachyOS-rice.git ~/Projects/cachyos-rice
 cd ~/Projects/cachyos-rice
 ./install.sh
 ```
