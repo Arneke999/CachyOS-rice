@@ -30,7 +30,8 @@ to `~/.config-backup-<timestamp>/` rather than overwriting them.
 3. **Services** — `scripts/enable-services.sh` enables the background session
    services (EasyEffects, OpenRGB). See [Background services](#background-services).
 4. **KDE** — `kde/apply-kde.sh` sets the colour scheme, cursor, icons, fonts,
-   and the flat/no-blur rule via `kwriteconfig6` and `plasma-apply-*`.
+   GTK theming and the flat/no-blur rule via `kwriteconfig6` and
+   `plasma-apply-*`.
 
 ## Layout
 
@@ -40,11 +41,12 @@ stow/                   each dir is a stow package, symlinked into ~
   kitty/ alacritty/     terminals
   fish/ starship/       shell + prompt
   nvim/                 neovim (lazy.nvim, catppuccin)
-  fastfetch/ bat/ gtk/
+  fastfetch/ bat/
   systemd/              user units for background services
 kde/
   colors/               Plasma colour scheme
   konsole/              Konsole colour scheme + profile
+  gtk/gtk.css           GTK named colours, copied out by apply-kde.sh
   apply-kde.sh          idempotent Plasma theming
   apply-lockscreen.sh   animated (video) lock screen
 scripts/
@@ -152,6 +154,26 @@ detaches the repo from your live config.
 
 So `apply-kde.sh` sets individual keys with `kwriteconfig6` instead. Idempotent,
 survives Plasma's rewrites, safe to re-run.
+
+**GTK is the same story.** `kde-gtk-config` owns `~/.config/gtk-3.0` and
+`gtk-4.0`: it generates `colors.css` and `assets/` from the active Plasma colour
+scheme, and rewrites `settings.ini` and `gtk.css` in place. Stowing those files
+meant every KDE GTK write showed up as a dirty file in this repo — and it had
+already replaced the `gtk.css` symlink with a real file, silently detaching it.
+
+So GTK is generated too. `kde/gtk/gtk.css` holds the named colours (GTK3 and
+GTK4 share them), and `apply-kde.sh` copies it to both directories and writes
+`settings.ini` alongside.
+
+This doesn't stop KDE rewriting those files — nothing does. It stops the
+rewrites from touching the repo. KDE preserves the values that matter (theme,
+cursor, icons) and only normalises formatting and appends machine-specific keys
+like `gtk-xft-dpi`, so re-running `apply-kde.sh` reasserts the rice.
+
+One gotcha the script handles: `kde-gtk-config` expects `gtk.css` to end with
+`@import 'colors.css';`. Copying our file over the top drops that line, so the
+script re-appends it — but only when `colors.css` exists, since a dangling
+import makes GTK log a parse error on every app launch.
 
 ## Panel
 

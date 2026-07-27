@@ -117,6 +117,43 @@ if command -v kvantummanager >/dev/null 2>&1; then
   fi
 fi
 
+# ── GTK ─────────────────────────────────────────────────────────────────────
+# Generated here rather than stowed. kde-gtk-config owns ~/.config/gtk-{3,4}.0:
+# it regenerates colors.css and assets/ from the Plasma colour scheme, and it
+# rewrites settings.ini and gtk.css in place — replacing them outright, which
+# destroys a symlink and silently detaches the repo from the live config. Same
+# reasoning as kwinrc/kdeglobals above.
+#
+# This does NOT stop KDE rewriting these files; it stops those rewrites from
+# showing up as dirty files in git. KDE preserves the values that matter (theme,
+# cursor, icons) and only normalises formatting and appends machine-specific
+# keys like gtk-xft-dpi, so re-running this script is enough to reassert the rice.
+say "writing GTK settings"
+for ver in 3.0 4.0; do
+  d="$HOME/.config/gtk-$ver"
+  mkdir -p "$d"
+
+  cat > "$d/settings.ini" <<'EOF'
+[Settings]
+gtk-application-prefer-dark-theme=true
+gtk-cursor-theme-name=catppuccin-mocha-pink-cursors
+gtk-cursor-theme-size=24
+gtk-font-name=Inter 10
+gtk-icon-theme-name=Papirus-Dark
+gtk-theme-name=catppuccin-mocha-pink-standard+default
+EOF
+
+  cp "$REPO/kde/gtk/gtk.css" "$d/gtk.css"
+  # kde-gtk-config generates colors.css next to gtk.css and expects gtk.css to
+  # pull it in. Copying our file over the top drops that import, so put it back
+  # — but only if the file is actually there, or GTK logs a parse error on every
+  # app launch.
+  if [ -f "$d/colors.css" ]; then
+    echo "@import 'colors.css';" >> "$d/gtk.css"
+  fi
+  echo "   gtk-$ver"
+done
+
 # ── Wallpaper ───────────────────────────────────────────────────────────────
 WALL=$(find "$REPO/wallpapers" -maxdepth 1 -type f \
         \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) 2>/dev/null | sort | head -1)

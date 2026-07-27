@@ -1,5 +1,9 @@
-/* Catppuccin Mocha for GTK4 / libadwaita named colours.
-   Kept identical to gtk-3.0/gtk.css. */
+/* Catppuccin Mocha / Pink — libadwaita named colours.
+   Ported from the NixOS rice (dotfiles/gtk/gtk.css.in), palette swapped.
+
+   apply-kde.sh copies this to BOTH ~/.config/gtk-3.0/gtk.css and
+   ~/.config/gtk-4.0/gtk.css. GTK3 and GTK4 use the same @define-color names
+   here, so one source file covers both. */
 @define-color accent_color #f5c2e7;
 @define-color accent_bg_color #f5c2e7;
 @define-color accent_fg_color #1e1e2e;
