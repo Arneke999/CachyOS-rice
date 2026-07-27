@@ -8,6 +8,11 @@ shell, editor and typography, restyled from that rice's wallpaper-driven
 
 ![palette](https://img.shields.io/badge/flavour-mocha-%231e1e2e) ![accent](https://img.shields.io/badge/accent-pink-%23f5c2e7)
 
+> **Note** — a personal rice, inspired by my own
+> [NixOS-rice](https://github.com/Arneke999/NixOS-rice) and vibecoded with an
+> LLM. The look and the decisions are mine; most of the scripting isn't. It
+> works on my machine, but read the scripts before running them on yours.
+
 ## Install
 
 ```bash
